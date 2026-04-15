@@ -1,42 +1,44 @@
-<!-- ![logo](./assets/logo.png) -->
-# Fail2Drive: Benchmarking Closed-Loop Driving Generalization
+<p align="center">
+  <img src="./assets/Fail2Drive_logo.png" width="400"/>
+</p>
+
+<h1 align="center">Fail2Drive: Benchmarking Closed-Loop Driving Generalization</h1>
+
+<p align="center">
+  <a href="https://simonger.github.io/fail2drive/">Project Page</a> &nbsp;|&nbsp;
+  <a href="https://arxiv.org/pdf/2604.08535">Paper</a> &nbsp;|&nbsp;
+  <a href="https://huggingface.co/datasets/SimonGer/Fail2Drive">Download</a> &nbsp;|&nbsp;
+  <a href="https://discord.gg/HZ83Em6kyZ">Discord</a> &nbsp;|&nbsp;
+  <a href="https://github.com/SimonGer/fail2drive_scenario_hub">Scenario Hub</a>
+</p>
+
+<p align="center">
+  <img src="./assets/hero.gif" alt="teaser"/>
+</p>
 
 Fail2Drive is the first CARLA v2 benchmark designed to test closed-loop generalization on truly unseen long-tail scenarios. By pairing each shifted route with an in-distribution reference scenario, it exposes substantial hidden failure modes in current state-of-the-art driving models.
 
-<p align="center">
-  <h3 align="center">
-    <a href="https://simonger.github.io/fail2drive/">Project Page</a> | 
-    <a href="https://arxiv.org/pdf/2604.08535">Paper</a> | 
-    <a href="https://huggingface.co/datasets/SimonGer/Fail2Drive">Download</a>
-  </h3>
-</p>
-
-![teaser](./assets/hero.gif)
-
 ## Highlights
-- 17 unseen scenarios for evaluation of true generalization.
-- 30 novel assets including animals, visual noise, and adversarial obstacles.
-- Paired route design enables quantification of generalization gap.
-- 100 route pairs in diverse environments and configurations.
-- Toolbox for creating custom obstacles and routes.
-<p align="center">
-  <h3 align="center">
-    <a href="https://discord.gg/HZ83Em6kyZ">Discord</a> | 
-    <a href="https://github.com/SimonGer/fail2drive_scenario_hub">Scenario Hub</a>
-  </h3>
-</p>
 
+- 17 unseen scenarios for evaluation of true generalization
+- 30 novel assets including animals, visual noise, and adversarial obstacles
+- Paired route design enables quantification of generalization gap
+- 100 route pairs in diverse environments and configurations
+- Toolbox for creating custom obstacles and routes
 
 ## Leaderboard
+
 <a href="https://github.com/SimonGer/fail2drive_leaderboard"><img src="https://raw.githubusercontent.com/SimonGer/fail2drive_leaderboard/main/rendered/table.png" width="65%"></a> <img src="./assets/bar_plot.png" width="33.7%">
 
 ## Contents
+
 - [Installation](#installation)
 - [Experiments](#experiments)
 - [Evaluation](#evaluation)
 - [Fail2Drive Toolbox](#fail2drive-toolbox)
 
 ## Installation
+
 > If you want to introduce Fail2Drive into an existing CARLA project, we provide a lightweight plugin installation on the [plugin branch](https://github.com/autonomousvision/Fail2Drive/tree/plugin). The installation below includes the `carla_garage` models to provide a starting point for new users.
 
 After a quick installation, you can already explore the benchmark manually, run baseline agents, and start testing custom scenarios.
@@ -67,6 +69,7 @@ source env_vars.sh
 ```
 
 ## Experiments
+
 To run any of the experiments below, start CARLA in a second terminal:
 
 ```bash
@@ -74,7 +77,6 @@ bash ${CARLA_ROOT}/CarlaUE4.sh
 ```
 
 <details>
-
 <summary>Tips for usage with reduced computational resources</summary>
 
 - Run CARLA with `-RenderOffscreen` to prevent the spectator window from opening.
@@ -84,13 +86,15 @@ bash ${CARLA_ROOT}/CarlaUE4.sh
 </details>
 
 #### Can you solve the benchmark routes by hand?
+
 ```bash
 python leaderboard/leaderboard/leaderboard_evaluator.py \
   --agent ${WORK_DIR}/leaderboard/leaderboard/autoagents/human_agent_keyboard.py \
   --routes ${WORK_DIR}/fail2drive_split/Generalization_PedestriansOnRoad_1085.xml
 ```
 
-#### Running the PDM-Lite expert policy:
+#### Running the PDM-Lite expert policy
+
 ```bash
 python leaderboard/leaderboard/leaderboard_evaluator_local.py \
   --agent ${WORK_DIR}/team_code/visu_agent.py \
@@ -98,7 +102,8 @@ python leaderboard/leaderboard/leaderboard_evaluator_local.py \
   --routes ${WORK_DIR}/fail2drive_split/Generalization_PedestriansOnRoad_1085.xml
 ```
 
-#### Running the TransFuser++ model:
+#### Running the TransFuser++ model
+
 Before running the model, download the checkpoint into the `checkpoints` folder:
 
 ```bash
@@ -120,32 +125,53 @@ LIVE_VISU=1 python leaderboard/leaderboard/leaderboard_evaluator_local.py \
 ## Evaluation
 
 ### Fail2Drive Rules
+
 As an offline benchmark, users have access to the full evaluation routes and assets. To prevent overfitting and keep Fail2Drive fair, we establish the following rules:
 
 1. **No training on Fail2Drive scenarios.** Models must not use the routes, scenario definitions, or assets introduced in Fail2Drive for training or fine-tuning. The benchmark serves strictly as a held-out test set.
 
 2. **External pretraining is allowed.** Pretraining on large-scale real-world datasets, internet-scale multimodal corpora, foundation models, or VLM/LLM backbones is permitted. Such general visual or linguistic knowledge is considered part of the model prior and not a violation of the benchmark.
 
-3. **Leaderboard entry.** We encourage users to submit final scores through the public evaluation repository via pull request in the [offical Leaderboard repository](https://github.com/SimonGer/fail2drive_leaderboard). This enables consistent comparison and facilitates transparent benchmarking.
+3. **Leaderboard entry.** We encourage users to submit final scores through the public evaluation repository via pull request in the [official Leaderboard repository](https://github.com/SimonGer/fail2drive_leaderboard). This enables consistent comparison and facilitates transparent benchmarking.
 
-### SLURM evaluation
+### SLURM Evaluation
+
 We provide tools to evaluate models on the full benchmark using a SLURM cluster. The [slurm_evaluate.py](slurm_evaluate.py) script automatically submits jobs up to a limit specified by [eval_num_jobs.txt](eval_num_jobs.txt) and monitors the evaluation. Small modifications are necessary to adapt this script to your specific cluster and model. Look for `NOTE` and `TODO` comments in the script.
 
 If you run into problems during evaluations, feel free to open an issue!
 
-### Result generation
-To obtain the final scores, use the [tools/f2d_result_parser.py](tools/f2d_result_parser.py) script.
+### Result Generation
+
+To obtain the final scores, use the [tools/f2d_result_parser.py](tools/f2d_result_parser.py) script:
 
 ```bash
 python tools/f2d_result_parser.py /path/to/results --method MyMethod
 ```
 
-
 ## Fail2Drive Toolbox
+
 We provide tools to generate new routes using the customizable scenarios and novel assets provided by Fail2Drive.
 
 ![Toolbox](./assets/toolbox.png)
 
-You can find the documentation for these tools [here](toolbox).
+You can find the documentation for these tools [here](toolbox). To share and browse community-created scenarios, visit our [Scenario Hub](https://github.com/SimonGer/fail2drive_scenario_hub).
 
-To share and browse community-created scenarios, visit our scenario hub [here](https://github.com/SimonGer/fail2drive_scenario_hub).
+## Acknowledgements
+
+This work stands on the shoulders of great open-source projects. We build heavily on [carla_garage](https://github.com/autonomousvision/carla_garage) and [carla_route_generator](https://github.com/autonomousvision/carla_route_generator), and integrate the [CARLA Leaderboard](https://github.com/carla-simulator/leaderboard) and [scenario_runner](https://github.com/carla-simulator/scenario_runner) frameworks.
+
+We also thank the authors of the models evaluated in our benchmark: [SimLingo](https://github.com/RenzKa/simlingo), [HiP-AD](https://github.com/nullmax-vision/HiP-AD), [Orion](https://github.com/xiaomi-mlab/Orion), [PlanT2](https://github.com/autonomousvision/plant2), and [Bench2DriveZoo](https://github.com/Thinklab-SJTU/Bench2DriveZoo).
+
+## Citation
+
+```bibtex
+@misc{gerstenecker2026fail2drivebenchmarkingclosedloopdriving,
+      title={Fail2Drive: Benchmarking Closed-Loop Driving Generalization}, 
+      author={Simon Gerstenecker and Andreas Geiger and Katrin Renz},
+      year={2026},
+      eprint={2604.08535},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2604.08535}, 
+}
+```
