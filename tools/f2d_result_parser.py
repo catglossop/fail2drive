@@ -15,6 +15,7 @@ import pandas as pd
 IGNORED_INFRACTIONS_FOR_SUCCESS = {"min_speed_infractions", "outside_route_lanes"}
 ROUTE_FILE_REGEX = re.compile(r"^(Base|Generalization)_(.+)_(\d{4})\.xml$")
 RESULT_FILE_REGEX = re.compile(r"^(\d{4})_res\.json$")
+RESULT_FILE_REGEX_ALT = re.compile(r"^(?:Base|Generalization)_.+_(\d{4})\.json$")
 SCENARIO_CLASSES = {
     "Robustness": [
         "RightConstruction",
@@ -42,6 +43,7 @@ SCENARIO_CLASSES = {
         "PedestriansOnRoad",
     ],
 }
+SCENARIO_TO_CLASS = {s: c for c, scenarios in SCENARIO_CLASSES.items() for s in scenarios}
 SCENARIO_PAPER_ORDER = [
     "Wall",
     "FullyBlocked",
@@ -108,21 +110,27 @@ def build_route_mapping(route_dir: Path) -> dict[int, tuple[str, str]]:
 
 
 def iter_seed_dirs(results_root: Path) -> Iterable[Path]:
+    direct = [
+        p for p in results_root.glob("*.json")
+        if RESULT_FILE_REGEX.match(p.name) or RESULT_FILE_REGEX_ALT.match(p.name)
+    ]
+    if direct:
+        yield results_root
+        return
     for path in sorted(results_root.iterdir()):
         if path.is_dir():
             yield path
 
 
-def resolve_result_dir(seed_dir: Path) -> Optional[Path]:
-    for name in ("res", "results"):
-        candidate = seed_dir / name
-        if candidate.exists() and candidate.is_dir():
-            return candidate
-    return None
+def find_result_files(seed_dir: Path) -> list[Path]:
+    return sorted(
+        p for p in seed_dir.rglob("*.json")
+        if RESULT_FILE_REGEX.match(p.name) or RESULT_FILE_REGEX_ALT.match(p.name)
+    )
 
 
 def route_idx_from_filename(json_path: Path) -> Optional[int]:
-    match = RESULT_FILE_REGEX.match(json_path.name)
+    match = RESULT_FILE_REGEX.match(json_path.name) or RESULT_FILE_REGEX_ALT.match(json_path.name)
     if not match:
         return None
     return int(match.group(1))
@@ -149,14 +157,12 @@ def load_rows(
     expected_route_ids = set(route_map.keys())
 
     for seed_dir in iter_seed_dirs(results_root):
-        result_dir = resolve_result_dir(seed_dir)
-        if result_dir is None:
-            warning = f"WARNING: seed {seed_dir.name} has no res/ or results/ directory."
-            warnings.append(warning)
+        json_files = find_result_files(seed_dir)
+        if not json_files:
+            warnings.append(f"WARNING: seed {seed_dir.name} has no result files.")
             strict_failure = True
             continue
 
-        json_files = sorted(result_dir.glob("*.json"))
         seen_route_ids: set[int] = set()
         unmapped_files: list[str] = []
 
@@ -181,10 +187,6 @@ def load_rows(
                 continue
 
             route_idx = route_idx_from_filename(json_path)
-            if route_idx is None:
-                unmapped_files.append(json_path.name)
-                strict_failure = True
-                continue
             if route_idx not in route_map:
                 unmapped_files.append(json_path.name)
                 strict_failure = True
@@ -237,7 +239,7 @@ def build_main_table(rows: pd.DataFrame) -> pd.DataFrame:
 
     table = rows.groupby(["Method", "Split"], as_index=False)[["DS", "Success"]].mean()
     table["Success"] *= 100.0
-    return table.round({"DS": 1, "Success": 1})
+    return table
 
 
 def harmonic_mean(a: float, b: float) -> float:
@@ -314,11 +316,7 @@ def build_scenario_hm_overview(rows: pd.DataFrame) -> list[dict]:
             overview.append(
                 {
                     "Method": method,
-                    "Class": next(
-                        class_name
-                        for class_name, scenarios in SCENARIO_CLASSES.items()
-                        if scenario in scenarios
-                    ),
+                    "Class": SCENARIO_TO_CLASS.get(scenario, "Unknown"),
                     "Scenario": scenario,
                     "Base HM": base_hm,
                     "Gen HM": gen_hm,
