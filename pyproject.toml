@@ -84,13 +84,17 @@ Home = "https://github.com/autonomousvision/fail2drive"
 Fork = "https://github.com/catglossop/fail2drive"
 
 [tool.setuptools]
-# Ship both:
-#   - `fail2drive`        — small Python package exposing ROUTES_DIR
-#   - `fail2drive_split`  — the directory of route XMLs, packaged as data
+# Ship:
+#   - `fail2drive`             — exposes ROUTES_DIR / SCENARIOS_DIR + the
+#                                  `atomics` shim and `scenarios` subpackage
+#   - `fail2drive.scenarios`   — vendored scenario .py files (the ones that
+#                                  add ImageOnObject, ObscuredStopSign, etc.)
+#   - `fail2drive_split`       — route XML payload, shipped as package data
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["fail2drive", "fail2drive_split"]
+include = ["fail2drive", "fail2drive.*", "fail2drive_split"]
 
 [tool.setuptools.package-data]
 fail2drive_split = ["*.xml"]
+"fail2drive.scenarios" = ["*.py"]
